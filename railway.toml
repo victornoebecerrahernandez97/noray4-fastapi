@@ -1,0 +1,7 @@
+[build]
+builder = "nixpacks"
+
+[[services]]
+name = "noray4-api"
+startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
+healthcheckPath = "/health"
