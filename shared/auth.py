@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings("ignore", ".*error reading bcrypt.*")
+
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
