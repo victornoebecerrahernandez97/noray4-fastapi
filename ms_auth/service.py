@@ -15,11 +15,13 @@ async def register_user(email: str, password: str, display_name: str) -> dict:
 
     existing = await collection.find_one({"email": email})
     if existing:
+        logger.info("REGISTER conflict: email=%s already exists", email)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Ya existe una cuenta con ese correo",
         )
 
+    logger.info("hash_password for: %s", email)
     now = datetime.utcnow()
     doc = {
         "email": email,
@@ -30,6 +32,7 @@ async def register_user(email: str, password: str, display_name: str) -> dict:
         "created_at": now,
         "updated_at": now,
     }
+    logger.info("DB insert user: %s", email)
     result = await collection.insert_one(doc)
     user_id = str(result.inserted_id)
 
@@ -44,6 +47,7 @@ async def register_user(email: str, password: str, display_name: str) -> dict:
     except Exception as exc:
         logger.warning("Error inesperado al crear rider para %s: %s", user_id, exc)
 
+    logger.info("REGISTER success: email=%s, user_id=%s", email, user_id)
     token = create_access_token({"sub": user_id})
     return {"access_token": token, "token_type": "bearer"}
 
@@ -53,17 +57,21 @@ async def login_user(email: str, password: str) -> dict:
 
     user = await collection.find_one({"email": email, "is_guest": False})
     if not user or not verify_password(password, user.get("hashed_password", "")):
+        logger.error("LOGIN failed: invalid credentials for email=%s", email)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales incorrectas",
         )
     if not user.get("is_active", True):
+        logger.error("LOGIN failed: account disabled for email=%s", email)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cuenta desactivada",
         )
 
-    token = create_access_token({"sub": str(user["_id"])})
+    user_id = str(user["_id"])
+    logger.info("LOGIN success: email=%s, user_id=%s", email, user_id)
+    token = create_access_token({"sub": user_id})
     return {"access_token": token, "token_type": "bearer"}
 
 
@@ -84,6 +92,7 @@ async def get_user_by_id(user_id: str) -> dict:
 
 async def create_guest_token() -> dict:
     """Generates a 24-hour temporary token for QR/invite access."""
+    logger.info("GUEST_TOKEN: creating guest user")
     collection = get_users_collection()
 
     now = datetime.utcnow()
@@ -96,8 +105,10 @@ async def create_guest_token() -> dict:
         "created_at": now,
         "updated_at": now,
     }
+    logger.info("DB insert user: guest")
     result = await collection.insert_one(doc)
     user_id = str(result.inserted_id)
 
+    logger.info("GUEST_TOKEN success: user_id=%s", user_id)
     token = create_access_token({"sub": user_id}, expires_delta=timedelta(hours=24))
     return {"access_token": token, "token_type": "bearer"}

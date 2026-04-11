@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, status
 
 from shared.dependencies import get_current_user
@@ -5,6 +7,7 @@ from ms_auth.schemas import LoginRequest, RegisterRequest, TokenResponse, UserOu
 from ms_auth import service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+logger = logging.getLogger("noray4.auth")
 
 
 @router.post(
@@ -18,6 +21,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
     ),
 )
 async def register(body: RegisterRequest):
+    logger.info("REGISTER attempt: email=%s, display_name=%s", body.email, body.display_name)
     return await service.register_user(body.email, body.password, body.display_name)
 
 
@@ -31,6 +35,7 @@ async def register(body: RegisterRequest):
     ),
 )
 async def login(body: LoginRequest):
+    logger.info("LOGIN attempt: email=%s", body.email)
     return await service.login_user(body.email, body.password)
 
 
@@ -44,6 +49,7 @@ async def login(body: LoginRequest):
     ),
 )
 async def logout(user_id: str = Depends(get_current_user)):
+    logger.info("LOGOUT: user_id=%s", user_id)
     # JWT is stateless; invalidation would require a blocklist — acknowledged for Sprint 2.
     return {"status": "ok", "detail": "Sesión cerrada"}
 
@@ -58,6 +64,7 @@ async def logout(user_id: str = Depends(get_current_user)):
     ),
 )
 async def me(user_id: str = Depends(get_current_user)):
+    logger.info("ME: user_id=%s", user_id)
     user = await service.get_user_by_id(user_id)
     return user
 
@@ -73,4 +80,5 @@ async def me(user_id: str = Depends(get_current_user)):
     ),
 )
 async def guest_token():
+    logger.info("GUEST_TOKEN: new guest token requested")
     return await service.create_guest_token()
