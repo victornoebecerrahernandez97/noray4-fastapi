@@ -22,6 +22,13 @@ logger = logging.getLogger("noray4.auth")
 )
 async def register(body: RegisterRequest):
     logger.info("REGISTER attempt: email=%s, display_name=%s", body.email, body.display_name)
+    logger.info(
+        "REGISTER body: email=%s, display_name=%s, password_len=%d, password_preview=%s",
+        body.email,
+        body.display_name,
+        len(body.password),
+        "*" * len(body.password),
+    )
     return await service.register_user(body.email, body.password, body.display_name)
 
 
