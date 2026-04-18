@@ -48,3 +48,13 @@ class StatsOut(BaseModel):
     amarres: int
     km_totales: int
     grupos: int
+
+
+class AvatarPresetOut(BaseModel):
+    id: str
+    label: str
+    url: str
+
+
+class AvatarPresetsResponse(BaseModel):
+    presets: List[AvatarPresetOut]

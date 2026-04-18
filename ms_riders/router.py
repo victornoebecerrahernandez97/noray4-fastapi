@@ -1,10 +1,30 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, File, UploadFile, status
 
 from shared.dependencies import get_current_user
-from ms_riders.schemas import MotoUpdate, RiderOut, RiderUpdate, StatsOut
+from ms_riders.schemas import (
+    AvatarPresetsResponse,
+    MotoUpdate,
+    RiderOut,
+    RiderUpdate,
+    StatsOut,
+)
 from ms_riders import service
 
 router = APIRouter(prefix="/riders", tags=["riders"])
+
+
+@router.get(
+    "/avatar-presets",
+    response_model=AvatarPresetsResponse,
+    summary="Listar avatares preset de la comunidad",
+    description=(
+        "Retorna las 6 opciones curadas de avatar disponibles durante el onboarding. "
+        "Las URLs apuntan al CDN de Cloudinary con transformación 400x400 centrada en rostro. "
+        "Endpoint público: no requiere autenticación."
+    ),
+)
+async def get_avatar_presets():
+    return {"presets": service.list_avatar_presets()}
 
 
 @router.get(
@@ -44,6 +64,22 @@ async def update_my_rider(body: RiderUpdate, user_id: str = Depends(get_current_
 )
 async def get_rider(rider_id: str):
     return await service.get_rider_by_id(rider_id)
+
+
+@router.post(
+    "/me/avatar",
+    response_model=RiderOut,
+    summary="Subir avatar desde archivo",
+    description=(
+        "Sube una imagen al rider autenticado y la almacena en Cloudinary. Se aceptan JPEG, PNG y WebP "
+        "hasta 5 MB. La imagen se transforma a 400x400 centrada en rostro."
+    ),
+)
+async def upload_avatar(
+    file: UploadFile = File(...),
+    user_id: str = Depends(get_current_user),
+):
+    return await service.upload_avatar(user_id, file)
 
 
 @router.post(
