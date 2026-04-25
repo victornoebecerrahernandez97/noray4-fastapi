@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class RegisterRequest(BaseModel):
@@ -15,6 +15,22 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class GuestTokenRequest(BaseModel):
+    nickname: str = Field(min_length=3, max_length=40)
+
+    @field_validator("nickname")
+    @classmethod
+    def strip_and_validate(cls, v: str) -> str:
+        stripped = v.strip()
+        if len(stripped) < 3:
+            raise ValueError("El apodo debe tener al menos 3 caracteres sin espacios al inicio y fin")
+        return stripped
+
+
+class GuestTokenResponse(TokenResponse):
+    display_name: str
 
 
 class UserOut(BaseModel):

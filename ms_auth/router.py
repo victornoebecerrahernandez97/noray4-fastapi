@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, Depends, status
 
 from shared.dependencies import get_current_user
-from ms_auth.schemas import LoginRequest, RegisterRequest, TokenResponse, UserOut
+from ms_auth.schemas import GuestTokenRequest, GuestTokenResponse, LoginRequest, RegisterRequest, TokenResponse, UserOut
 from ms_auth import service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -78,14 +78,14 @@ async def me(user_id: str = Depends(get_current_user)):
 
 @router.post(
     "/guest-token",
-    response_model=TokenResponse,
+    response_model=GuestTokenResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Generar token de invitado",
     description=(
-        "Genera un JWT temporal con TTL de 24 horas y flag is_guest=true. Permite acceso a salas "
-        "públicas vía QR sin necesidad de cuenta registrada."
+        "Genera un JWT temporal con TTL de 24 horas y flag is_guest=true. Requiere un apodo "
+        "(nickname) de 3–40 caracteres. Permite acceso a salas públicas vía QR sin cuenta registrada."
     ),
 )
-async def guest_token():
-    logger.info("GUEST_TOKEN: new guest token requested")
-    return await service.create_guest_token()
+async def guest_token(body: GuestTokenRequest):
+    logger.info("GUEST_TOKEN: nickname=%s", body.nickname)
+    return await service.create_guest_token(body.nickname)

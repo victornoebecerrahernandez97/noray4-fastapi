@@ -90,25 +90,36 @@ async def get_user_by_id(user_id: str) -> dict:
     return user
 
 
-async def create_guest_token() -> dict:
+async def create_guest_token(nickname: str) -> dict:
     """Generates a 24-hour temporary token for QR/invite access."""
-    logger.info("GUEST_TOKEN: creating guest user")
+    logger.info("GUEST_TOKEN: creating guest user nickname=%s", nickname)
     collection = get_users_collection()
 
     now = datetime.utcnow()
     doc = {
         "email": f"guest_{ObjectId()}@noray4.guest",
         "hashed_password": None,
-        "display_name": "Invitado",
+        "display_name": nickname,
         "is_guest": True,
         "is_active": True,
         "created_at": now,
         "updated_at": now,
     }
-    logger.info("DB insert user: guest")
     result = await collection.insert_one(doc)
     user_id = str(result.inserted_id)
 
+    try:
+        from ms_riders.service import create_rider
+        await create_rider(user_id, {"display_name": nickname})
+    except HTTPException as exc:
+        if exc.status_code != status.HTTP_409_CONFLICT:
+            logger.warning("No se pudo crear rider para guest %s: %s", user_id, exc.detail)
+    except Exception as exc:
+        logger.warning("Error inesperado al crear rider para guest %s: %s", user_id, exc)
+
     logger.info("GUEST_TOKEN success: user_id=%s", user_id)
-    token = create_access_token({"sub": user_id}, expires_delta=timedelta(hours=24))
-    return {"access_token": token, "token_type": "bearer"}
+    token = create_access_token(
+        {"sub": user_id, "is_guest": True, "display_name": nickname},
+        expires_delta=timedelta(hours=24),
+    )
+    return {"access_token": token, "token_type": "bearer", "display_name": nickname}

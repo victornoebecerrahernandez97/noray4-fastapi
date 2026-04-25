@@ -45,7 +45,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Noray4 API",
-    version="0.1.0",
+    version="0.2.0",
     description="""
 ## Noray4 — Backend API
 
