@@ -55,6 +55,7 @@ async def create_rider(user_id: str, data: dict) -> dict:
     now = datetime.utcnow()
     doc = {
         "user_id": user_id,
+        "is_admin": False,
         "followers": [],
         "following": [],
         "created_at": now,

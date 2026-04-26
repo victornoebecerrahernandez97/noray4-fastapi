@@ -38,6 +38,7 @@ class RiderOut(BaseModel):
     vehicle_year: Optional[int] = None
     vehicle_km: Optional[int] = None
     avatar_url: Optional[str] = None
+    is_admin: bool = False
     followers: List[str] = Field(default_factory=list)
     following: List[str] = Field(default_factory=list)
     created_at: datetime
